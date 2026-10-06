@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false
+  },
+  "exclude": ["src/social_bad", "src/ai_corrupt", "src/social_bad_corrupt", "src/**/*.test.ts", "src/tests"]
+}
