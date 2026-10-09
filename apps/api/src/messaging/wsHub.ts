@@ -29,9 +29,17 @@ export function setupWebSocket(server: Server): WebSocketServer {
       try {
         const msg = JSON.parse(String(raw));
         if (msg.type === 'subscribe' && Number.isFinite(Number(msg.conversationId))) {
-          const set = conversationMembers.get(Number(msg.conversationId)) ?? new Set<bigint>();
-          set.add(userId);
-          conversationMembers.set(Number(msg.conversationId), set);
+          const convId = Number(msg.conversationId);
+          // only conversation participants may subscribe
+          import('./messageService.js').then(({ isParticipant }) => {
+            isParticipant(BigInt(convId), userId)
+              .then((ok) => {                if (!ok) return;
+                const set = conversationMembers.get(convId) ?? new Set<bigint>();
+                set.add(userId);
+                conversationMembers.set(convId, set);
+              })
+              .catch(() => { /* deny on error */ });
+          }).catch(() => { /* deny on error */ });
         }
       } catch { /* ignore malformed frames */ }
     });

@@ -187,18 +187,19 @@ export async function userIdByUsername(username) {
         throw notFound('User not found');
     return BigInt(rows[0].id);
 }
-export async function listFollows(userId, kind, cursor, limit = 20) {
+export async function listFollows(userId, kind, viewerId, cursor, limit = 20) {
     const l = Math.min(Math.max(1, limit), 50);
     const joinCol = kind === 'followers' ? 'f.followee_id' : 'f.follower_id';
     const selectCol = kind === 'followers' ? 'f.follower_id' : 'f.followee_id';
-    const params = [userId];
+    const params = [viewerId ?? 0, userId];
     let cursorSql = '';
     if (cursor) {
         cursorSql = ` AND u.id < ?`;
         params.push(BigInt(cursor));
     }
     params.push(l + 1);
-    const [rows] = await pool.query(`SELECT u.id, u.username, u.display_name, p.avatar_url
+    const [rows] = await pool.query(`SELECT u.id, u.username, u.display_name, p.avatar_url,
+       EXISTS(SELECT 1 FROM follows f2 WHERE f2.follower_id = ? AND f2.followee_id = u.id) AS viewer_follows
      FROM follows f JOIN users u ON u.id = ${selectCol}
      LEFT JOIN profiles p ON p.user_id = u.id
      WHERE ${joinCol} = ?${cursorSql}
@@ -208,6 +209,7 @@ export async function listFollows(userId, kind, cursor, limit = 20) {
         username: r.username,
         displayName: r.display_name,
         avatarUrl: r.avatar_url,
+        isFollowing: !!Number(r.viewer_follows),
     }));
     return {
         items,
@@ -274,6 +276,15 @@ export async function listPendingIncoming(userId) {
      JOIN users u ON u.id = cr.requester_id
      LEFT JOIN profiles p ON p.user_id = u.id
      WHERE cr.addressee_id = ? AND cr.status = 'pending'
+     ORDER BY cr.created_at DESC`, [userId]);
+    return rows.map((r) => ({ username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url }));
+}
+export async function listPendingOutgoing(userId) {
+    const [rows] = await pool.query(`SELECT u.username, u.display_name, p.avatar_url
+     FROM connection_requests cr
+     JOIN users u ON u.id = cr.addressee_id
+     LEFT JOIN profiles p ON p.user_id = u.id
+     WHERE cr.requester_id = ? AND cr.status = 'pending'
      ORDER BY cr.created_at DESC`, [userId]);
     return rows.map((r) => ({ username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url }));
 }

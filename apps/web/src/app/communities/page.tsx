@@ -64,7 +64,7 @@ export default function CommunitiesPage() {
           onClick={() => setTab('joined')}>Your groups</button>
       </div>
       <div className="card" style={{ marginBottom: 16 }}>
-        <input className="input" placeholder="🔍 Search groups…" value={search} onChange={(e) => { setSearch(e.target.value); load(e.target.value); }} style={{ width: '100%', marginBottom: 10, borderRadius: 999 }} />
+        <input className="input" placeholder="Search groups…" value={search} onChange={(e) => { setSearch(e.target.value); load(e.target.value); }} style={{ width: '100%', marginBottom: 10, borderRadius: 999 }} />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input className="input" placeholder="New group name" value={name} onChange={(e) => setName(e.target.value)} style={{ flex: 1 }} />
           <select className="input" style={{ width: 'auto', minHeight: 0, padding: '8px 10px' }} value={privacy} onChange={(e) => setPrivacy(e.target.value as 'public' | 'private')}>
@@ -80,19 +80,22 @@ export default function CommunitiesPage() {
           <p className="muted">{tab === 'joined' ? 'You have not joined any groups yet.' : 'No groups found.'}</p>
         </div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
         {shown.map((c) => (
           <Link key={c.id} href={`/communities/${c.slug}`} className="card" style={{ overflow: 'hidden', textDecoration: 'none', color: 'var(--fb-text)', padding: 0 }}>
-            <div style={{ height: 72, background: 'linear-gradient(120deg, #1877F2, #45BD62)' }} />
+            <div style={{ height: 100, background: 'linear-gradient(120deg, var(--fb-blue), #7c3aed 90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>👥</div>
             <div style={{ padding: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{c.name}</div>
-              {c.privacy === 'private' && <span className="fb-chip" style={{ fontSize: 11, padding: '2px 8px' }}>Private</span>}
-              <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>{c.memberCount} members</div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{c.name}</div>
+              <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                {c.privacy === 'private' ? '🔒 Private group' : '🌐 Public group'} · {c.memberCount} members
+              </div>
               {!c.myRole ? (
-                <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8, minHeight: 0, padding: '6px 0' }}
+                <button className="btn btn-secondary" style={{ width: '100%', marginTop: 10, minHeight: 0, padding: '8px 0', fontWeight: 700 }}
                   onClick={(e) => { e.preventDefault(); join(c.slug); }}>Join group</button>
               ) : (
-                <div className="fb-chip" style={{ textAlign: 'center', marginTop: 8 }}>{c.myRole === 'owner' ? 'Owner' : c.myRole === 'admin' ? 'Admin' : 'Joined'}</div>
+                <div className="fb-chip" style={{ textAlign: 'center', marginTop: 10, padding: '6px 0' }}>
+                  {c.myRole === 'owner' ? '👑 Owner' : c.myRole === 'admin' ? '⚙ Admin' : '✓ Joined'}
+                </div>
               )}
             </div>
           </Link>

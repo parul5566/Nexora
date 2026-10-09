@@ -8,6 +8,7 @@ router.post('/stories', requireAuth, async (req: any, res, next) => {
   try {
     const story = await createStory(req.ctx.userId, {
       mediaUrl: req.body?.mediaUrl ?? null,
+      mediaType: req.body?.mediaType ?? null,
       bgText: req.body?.bgText ?? null,
       bgColor: req.body?.bgColor,
     });

@@ -6,7 +6,7 @@ import { AppShell, Avatar } from '../../components/shell';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
-type Tab = 'requests' | 'followers' | 'following';
+type Tab = 'requests' | 'sent' | 'followers' | 'following';
 
 interface Person {
   id?: string;
@@ -37,8 +37,8 @@ export default function FriendsPage() {
     setMessage('');
     const token = localStorage.getItem('nexora_token');
     if (!token || !me) return;
-    if (t === 'requests') {
-      const res = await fetch(`${API}/api/v1/connections/requests/incoming`, { headers: { Authorization: `Bearer ${token}` } });
+    if (t === 'requests' || t === 'sent') {
+      const res = await fetch(`${API}/api/v1/connections/requests/${t === 'sent' ? 'outgoing' : 'incoming'}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setPeople((await res.json()).requests ?? []);
       else setPeople([]);
     } else if (me) {
@@ -76,11 +76,31 @@ export default function FriendsPage() {
     if (res.ok) load(tab);
   }
 
+  async function cancelRequest(username: string) {
+    setBusy(username);
+    const token = localStorage.getItem('nexora_token')!;
+    const res = await fetch(`${API}/api/v1/connections/${username}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    });
+    setBusy(null);
+    if (res.ok) load(tab);
+  }
+
+  async function unfollow(username: string) {
+    setBusy(username);
+    const token = localStorage.getItem('nexora_token')!;
+    const res = await fetch(`${API}/api/v1/follows/${username}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    });
+    setBusy(null);
+    if (res.ok) load(tab);
+  }
+
   const body = (
     <div style={{ maxWidth: 640, margin: '0 auto', width: '100%' }}>
       <h1 style={{ margin: '0 0 12px', fontSize: 22 }}>Friends</h1>
       <div className="chip-row" role="tablist" aria-label="Friend lists" style={{ marginBottom: 12 }}>
-        {([['requests', 'Requests'], ['followers', 'Followers'], ['following', 'Following']] as const).map(([key, label]) => (
+        {([['requests', 'Requests'], ['sent', 'Sent'], ['followers', 'Followers'], ['following', 'Following']] as const).map(([key, label]) => (
           <button
             key={key}
             role="tab"
@@ -96,7 +116,7 @@ export default function FriendsPage() {
       {!loading && people.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: 40 }}>
           <p className="muted">
-            {tab === 'requests' ? 'No pending friend requests.' : tab === 'followers' ? 'No followers yet.' : 'You are not following anyone yet.'}
+            {tab === 'requests' ? 'No pending friend requests.' : tab === 'sent' ? 'No sent requests.' : tab === 'followers' ? 'No followers yet.' : 'You are not following anyone yet.'}
           </p>
         </div>
       )}
@@ -112,6 +132,12 @@ export default function FriendsPage() {
               <button className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '6px 16px' }} disabled={busy === p.username} onClick={() => accept(p.username)}>Confirm</button>
               <button className="btn btn-secondary" style={{ minHeight: 0, padding: '6px 16px' }} disabled={busy === p.username} onClick={() => reject(p.username)}>Delete</button>
             </div>
+          )}
+          {tab === 'sent' && (
+            <button className="btn btn-secondary" style={{ minHeight: 0, padding: '6px 16px' }} disabled={busy === p.username} onClick={() => cancelRequest(p.username)}>Cancel</button>
+          )}
+          {tab === 'following' && (
+            <button className="btn btn-secondary" style={{ minHeight: 0, padding: '6px 16px' }} disabled={busy === p.username} onClick={() => unfollow(p.username)}>Unfollow</button>
           )}
         </div>
       ))}

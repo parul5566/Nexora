@@ -42,8 +42,9 @@ describe('stories (Module 12)', () => {
     expect(text.body.story.expiresAt).toBeTruthy();
 
     const media = await authed(request(app).post('/api/v1/stories'), a.token)
-      .send({ mediaUrl: '/media/images/7c6df26f4ae378e7701fef9d.png' });
+      .send({ mediaUrl: '/media/images/7c6df26f4ae378e7701fef9d.png', mediaType: 'photo' });
     expect(media.status).toBe(201);
+    expect(media.body.story.mediaType).toBe('photo');
 
     // validation
     const bad = await authed(request(app).post('/api/v1/stories'), a.token).send({});

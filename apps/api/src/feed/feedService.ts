@@ -73,7 +73,7 @@ export async function homeFeed(
   }).sort((a: any, b: any) => b.score - a.score || Number(b.row.id) - Number(a.row.id));
 
   const page = scored.slice(0, l);
-  const items = (await getPostsByIds(viewerId, page.map((s: any) => Number(s.row.id)))) as PostView[];
+  const items = (await getPostsByIds(viewerId, page.map((s: any) => Number(s.row.id)))) as unknown as PostView[];
   const last = page[page.length - 1];
   return {
     items,

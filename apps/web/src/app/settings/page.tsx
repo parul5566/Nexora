@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AppShell, Avatar } from '../../components/shell';
+import { AppShell, Icon, Avatar } from '../../components/shell';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -10,25 +10,25 @@ const SECTIONS: Array<{ title: string; items: Array<{ label: string; href: strin
   {
     title: 'Account',
     items: [
-      { label: 'Edit profile', href: '/settings/profile', icon: '👤', desc: 'Photo, bio, headline, privacy' },
-      { label: 'Your profile', href: '/home', icon: '🏠', desc: 'See your public profile' },
+      { label: 'Edit profile', href: '/settings/profile', icon: 'friends', desc: 'Photo, bio, headline, privacy' },
+      { label: 'Your profile', href: '/home', icon: 'home', desc: 'See your public profile' },
     ],
   },
   {
     title: 'Activity',
     items: [
-      { label: 'Saved posts', href: '/bookmarks', icon: '🔖', desc: 'Posts you bookmarked' },
-      { label: 'Notifications', href: '/notifications', icon: '🔔', desc: 'Likes, comments, mentions' },
-      { label: 'Chats', href: '/messages', icon: '💬', desc: 'Your conversations' },
+      { label: 'Saved posts', href: '/bookmarks', icon: 'saved', desc: 'Posts you bookmarked' },
+      { label: 'Notifications', href: '/notifications', icon: 'bell', desc: 'Likes, comments, mentions' },
+      { label: 'Chats', href: '/messages', icon: 'chat', desc: 'Your conversations' },
     ],
   },
   {
     title: 'More',
     items: [
-      { label: 'Groups', href: '/communities', icon: '🏷️', desc: 'Communities you joined' },
-      { label: 'Events', href: '/events', icon: '📅', desc: 'Upcoming events' },
-      { label: 'Jobs', href: '/jobs', icon: '💼', desc: 'Job listings and applications' },
-      { label: 'Watch', href: '/reels', icon: '📺', desc: 'Short videos' },
+      { label: 'Groups', href: '/communities', icon: 'groups', desc: 'Communities you joined' },
+      { label: 'Events', href: '/events', icon: 'events', desc: 'Upcoming events' },
+      { label: 'Jobs', href: '/jobs', icon: 'jobs', desc: 'Job listings and applications' },
+      { label: 'Watch', href: '/reels', icon: 'watch', desc: 'Short videos' },
     ],
   },
 ];
@@ -73,7 +73,7 @@ export default function SettingsPage() {
           <h2 style={{ fontSize: 15, color: 'var(--fb-text-secondary)', margin: '0 0 6px 4px' }}>{s.title}</h2>
           {s.items.map((it) => (
             <Link key={it.label} href={it.href} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', marginBottom: 6, textDecoration: 'none', color: 'var(--fb-text)' }}>
-              <span style={{ fontSize: 22 }}>{it.icon}</span>
+              <Icon name={it.icon} size={24} />
               <div>
                 <div style={{ fontWeight: 600 }}>{it.label}</div>
                 <div className="muted" style={{ fontSize: 13 }}>{it.desc}</div>

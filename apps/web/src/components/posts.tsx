@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Avatar } from './shell';
+import { Avatar, Icon } from './shell';
+
+// Colored SVG glyph paths for post/composer icons (rendered via shell Icon)
+const EXTRA_ICONS: Record<string, string> = {};
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -252,15 +255,15 @@ export function PostCard({ post, onChanged, children }: { post: PostView; onChan
             style={state.reactions?.myReaction ? { color: 'var(--fb-blue)' } : undefined}
             onClick={() => react(state.reactions?.myReaction ?? 'like')}
           >
-            <span style={{ fontSize: 16 }}>{state.reactions?.myReaction ? (REACTIONS.find(([t]) => t === state.reactions!.myReaction)?.[1] ?? '👍') : '👍'}</span>
+            <Icon name="thumb" size={18} color={state.reactions?.myReaction ? '#1877F2' : '#65676B'} />
             {state.reactions?.myReaction ? state.reactions.myReaction.charAt(0).toUpperCase() + state.reactions.myReaction.slice(1) : 'Like'}
           </button>
         </div>
         <button className="post-action" style={{ flex: 1, justifyContent: 'center' }} onClick={toggleComments}>
-          <span style={{ fontSize: 16 }}>💬</span> Comment
+          <Icon name="comment" size={18} color="#65676B" /> Comment
         </button>
         <button className="post-action" style={{ flex: 1, justifyContent: 'center' }} onClick={toggleBookmark}>
-          <span style={{ fontSize: 16 }}>{state.bookmarked ? '★' : '☆'}</span> {state.bookmarked ? 'Saved' : 'Save'}
+          <Icon name="saved" size={18} color={state.bookmarked ? '#A855F7' : '#65676B'} /> {state.bookmarked ? 'Saved' : 'Save'}
         </button>
       </footer>
       {(state.reactions?.total ?? 0) > 0 || (state.commentCount ?? 0) > 0 ? (
@@ -358,19 +361,44 @@ export function Composer({ onPosted, communityId }: { onPosted: () => void; comm
   }
 
   return (
-    <div className="card" style={{ marginBottom: 16, padding: '12px 16px' }}>
-      <div style={{ display: 'flex', gap: 10 }}>
+    <div className="card" style={{ marginBottom: 16, padding: '14px 16px 10px', borderRadius: 14 }}>
+      {/* FB-style header row: avatar + name + visibility pill */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <Avatar name={me?.displayName ?? 'You'} src={me?.avatarUrl ?? undefined} size={40} />
-        <textarea
-          className="fb-composer-input"
-          rows={content.length > 60 ? 3 : 1}
-          placeholder={`What's on your mind, ${me?.displayName?.split(' ')[0] ?? 'there'}?`}
-          value={content}
-          maxLength={5000}
-          onChange={(e) => setContent(e.target.value)}
-          style={{ resize: 'none' }}
-        />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.2 }}>
+            {me?.displayName ?? 'You'}
+            {communityId && <span className="muted" style={{ fontWeight: 400 }}> ▸ posting to group</span>}
+          </div>
+          <select
+            aria-label="Post visibility"
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value)}
+            style={{
+              border: 'none', background: 'var(--fb-canvas)', color: 'var(--fb-text-secondary)',
+              fontSize: 12, padding: '1px 6px', borderRadius: 6, marginTop: 2, cursor: 'pointer', maxWidth: 160,
+            }}
+          >
+            <option value="public">🌐 Public</option>
+            <option value="followers">👥 Followers</option>
+            <option value="private">🔒 Only me</option>
+          </select>
+        </div>
       </div>
+      {/* Input area */}
+      <textarea
+        className="fb-composer-input"
+        rows={content.length > 120 ? 5 : content.length > 60 ? 3 : 2}
+        placeholder={`What's on your mind, ${me?.displayName?.split(' ')[0] ?? 'there'}?`}
+        value={content}
+        maxLength={5000}
+        onChange={(e) => setContent(e.target.value)}
+        style={{ resize: 'none', fontSize: 17, border: 'none', padding: '4px 2px', minHeight: 56 }}
+      />
+      {/* char counter when long */}
+      {content.length > 4400 && (
+        <div className="muted" style={{ fontSize: 12, textAlign: 'right' }}>{5000 - content.length} characters left</div>
+      )}
       {mediaUrls.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           {mediaUrls.map((m) =>
@@ -400,31 +428,29 @@ export function Composer({ onPosted, communityId }: { onPosted: () => void; comm
           )}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', borderTop: '1px solid var(--fb-border)', marginTop: 10, paddingTop: 6 }}>
-        <label className="composer-action" style={{ color: '#45BD62' }}>
-          <span style={{ fontSize: 18 }}>🖼️</span> Photo/Video
+      {/* FB-style action bar: equal-width tinted action tiles */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
+        gap: 6, borderTop: '1px solid var(--fb-border)', marginTop: 10, paddingTop: 8,
+      }}>
+        <label className="composer-action" style={{ color: '#45BD62', justifyContent: 'center', background: 'var(--fb-canvas)', borderRadius: 8, padding: '8px 6px', cursor: 'pointer' }}>
+          <Icon name="photo" size={20} color="#45BD62" /> Photo/Video
           <input type="file" accept="image/*,video/*" multiple hidden onChange={(e) => e.target.files && uploadFiles(e.target.files)} />
         </label>
-        <button className="composer-action" style={{ color: '#1877F2' }} onClick={() => setPollMode((p) => !p)}>
-          <span style={{ fontSize: 18 }}>📊</span> Poll
+        <button className="composer-action" style={{ color: '#1877F2', justifyContent: 'center', background: pollMode ? 'var(--fb-surface-2)' : 'var(--fb-canvas)', borderRadius: 8, padding: '8px 6px' }} onClick={() => setPollMode((p) => !p)}>
+          <Icon name="poll" size={18} color="#1877F2" /> Poll
         </button>
-        <button className="composer-action" style={{ color: '#F7B928' }} onClick={() => setContent((c) => `${c}${c && !c.endsWith(' ') ? ' ' : ''}😊`)}>
-          <span style={{ fontSize: 18 }}>😀</span> Feeling/Activity
+        <button className="composer-action" style={{ color: '#F7B928', justifyContent: 'center', background: 'var(--fb-canvas)', borderRadius: 8, padding: '8px 6px' }} onClick={() => setContent((c) => `${c}${c && !c.endsWith(' ') ? ' ' : ''}😊`)}>
+          <Icon name="smile" size={20} color="#F7B928" /> Feeling
         </button>
-        <select
-          className="composer-action"
-          style={{ color: 'var(--fb-text-secondary)', border: 'none', background: 'transparent', cursor: 'pointer' }}
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value)}
-        >
-          <option value="public">🌐 Public</option>
-          <option value="followers">👥 Followers</option>
-          <option value="private">🔒 Only me</option>
-        </select>
-        <span style={{ flex: 1 }} />
+        {/* poll icon (svg) defined in ICON_PATHS as 'poll' */}
+      </div>
+      {/* Footer: upload state + draft/post */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
         {uploading > 0 && <span className="muted" style={{ fontSize: 13 }}>Uploading… ({uploading})</span>}
-        <button className="btn btn-secondary" style={{ padding: '6px 14px', minHeight: 0 }} disabled={busy || !content.trim()} onClick={() => submit(true)}>Draft</button>
-        <button className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '6px 20px' }} disabled={busy || (!content.trim() && !(pollMode && pollOptions.some((o) => o.trim())))} onClick={() => submit(false)}>
+        <span style={{ flex: 1 }} />
+        <button className="btn btn-secondary" style={{ padding: '6px 14px', minHeight: 0 }} disabled={busy || !content.trim()} onClick={() => submit(true)}>Save draft</button>
+        <button className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '8px 24px', fontWeight: 800 }} disabled={busy || (!content.trim() && !(pollMode && pollOptions.some((o) => o.trim())))} onClick={() => submit(false)}>
           {busy ? 'Posting…' : 'Post'}
         </button>
       </div>

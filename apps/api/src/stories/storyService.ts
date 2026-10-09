@@ -5,6 +5,7 @@ export interface StoryView {
   id: string;
   author: { username: string; displayName: string; avatarUrl: string | null };
   mediaUrl: string | null;
+  mediaType: 'photo' | 'video' | 'music' | null;
   bgText: string | null;
   bgColor: string;
   createdAt: string;
@@ -17,18 +18,25 @@ const ACTIVE = 'deleted_at IS NULL AND expires_at > NOW()';
 
 export async function createStory(
   authorId: bigint,
-  input: { mediaUrl?: string | null; bgText?: string | null; bgColor?: string },
+  input: { mediaUrl?: string | null; mediaType?: string | null; bgText?: string | null; bgColor?: string },
 ): Promise<StoryView> {
   const mediaUrl = input.mediaUrl ?? null;
+  const mediaType = (['photo', 'video', 'music'] as const).includes(input.mediaType as any)
+    ? (input.mediaType as 'photo' | 'video' | 'music')
+    : null;
+  if (mediaUrl && !mediaType) throw badRequest('mediaType (photo|video|music) is required with media');
+  if (mediaUrl && !mediaUrl.startsWith('/media/')) throw badRequest('Invalid media URL');
+  if (mediaUrl && mediaType === 'music' && !/\.(mp3|m4a|ogg|wav|aac|webm)$/i.test(mediaUrl)) {
+    throw badRequest('Invalid audio file URL');
+  }
   const bgText = input.bgText?.trim() || null;
   if (!mediaUrl && !bgText) throw badRequest('Story needs media or text');
-  if (mediaUrl && !mediaUrl.startsWith('/media/')) throw badRequest('Invalid media URL');
   if (bgText && bgText.length > 280) throw badRequest('Text too long (max 280)');
   const bgColor = /^#[0-9a-fA-F]{6}$/.test(input.bgColor ?? '') ? input.bgColor! : '#3b82f6';
   const [r]: any = await pool.query(
-    `INSERT INTO stories (author_id, media_url, bg_text, bg_color, expires_at)
-     VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
-    [authorId, mediaUrl, bgText, bgColor],
+    `INSERT INTO stories (author_id, media_url, media_type, bg_text, bg_color, expires_at)
+     VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))`,
+    [authorId, mediaUrl, mediaType, bgText, bgColor],
   );
   return (await getStory(authorId, Number(r.insertId)))!;
 }
@@ -48,6 +56,7 @@ function toView(r: any): StoryView {
     id: String(r.id),
     author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url },
     mediaUrl: r.media_url,
+    mediaType: r.media_type ?? null,
     bgText: r.bg_text,
     bgColor: r.bg_color,
     createdAt: r.created_at,

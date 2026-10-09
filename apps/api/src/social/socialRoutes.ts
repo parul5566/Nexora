@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { updateProfile, getProfile, setProfileImage, follow, unfollow, block, unblock, mute, unmute, listFollows, relationshipState, mutualCount, userIdByUsername, requestConnection, acceptConnection, rejectConnection, removeConnection, listPendingIncoming, } from '../social/graphService.js';
+import { updateProfile, getProfile, setProfileImage, follow, unfollow, block, unblock, mute, unmute, listFollows, relationshipState, mutualCount, userIdByUsername, requestConnection, acceptConnection, rejectConnection, removeConnection, listPendingIncoming, listPendingOutgoing, } from '../social/graphService.js';
 import { requireSession } from '../auth/authService.js';
 import { forbidden } from '@nexora/shared';
 const router = Router();
@@ -109,7 +109,7 @@ router.get('/follows/:username/followers', async (req, res, next) => {
         const profile = await getProfile(ctx?.userId ?? null, req.params.username);
         if (profile.limited && !self)
             throw forbidden('This list is private');
-        res.json(await listFollows(target, 'followers', req.query.cursor || null, Number(req.query.limit) || 20));
+        res.json(await listFollows(target, 'followers', ctx?.userId ?? null, req.query.cursor || null, Number(req.query.limit) || 20));
     }
     catch (e) {
         next(e);
@@ -123,7 +123,7 @@ router.get('/follows/:username/following', async (req, res, next) => {
         const profile = await getProfile(ctx?.userId ?? null, req.params.username);
         if (profile.limited && !self)
             throw forbidden('This list is private');
-        res.json(await listFollows(target, 'following', req.query.cursor || null, Number(req.query.limit) || 20));
+        res.json(await listFollows(target, 'following', ctx?.userId ?? null, req.query.cursor || null, Number(req.query.limit) || 20));
     }
     catch (e) {
         next(e);
@@ -222,6 +222,15 @@ router.get('/connections/requests/incoming', async (req, res, next) => {
     try {
         const ctx = await ctxOf(req);
         res.json({ requests: await listPendingIncoming(ctx.userId) });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+router.get('/connections/requests/outgoing', async (req, res, next) => {
+    try {
+        const ctx = await ctxOf(req);
+        res.json({ requests: await listPendingOutgoing(ctx.userId) });
     }
     catch (e) {
         next(e);

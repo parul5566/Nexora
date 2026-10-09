@@ -3,7 +3,7 @@ import { badRequest, notFound, forbidden } from '@nexora/shared';
 
 export interface ReelView {
   id: string;
-  author: { username: string; displayName: string; avatarUrl: string | null };
+  author: { username: string; displayName: string; avatarUrl: string | null; isFollowing?: boolean };
   videoUrl: string;
   caption: string | null;
   views: number;
@@ -32,9 +32,13 @@ async function hydrate(rows: any[], viewerId: bigint): Promise<ReelView[]> {
     ? await pool.query('SELECT reel_id, COUNT(*) AS c FROM reel_likes WHERE reel_id IN (?) GROUP BY reel_id', [ids]) : [[]];
   const [mine]: any = ids.length
     ? await pool.query('SELECT reel_id FROM reel_likes WHERE user_id = ? AND reel_id IN (?)', [viewerId, ids]) : [[]];
+  const authorIds = [...new Set(rows.map((r: any) => Number(r.author_id)))];
+  const [follows]: any = authorIds.length
+    ? await pool.query('SELECT followee_id FROM follows WHERE follower_id = ? AND followee_id IN (?)', [viewerId, authorIds]) : [[]];
+  const followedSet = new Set(follows.map((f: any) => Number(f.followee_id)));
   return rows.map((r) => ({
     id: String(r.id),
-    author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url },
+    author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url, isFollowing: followedSet.has(Number(r.author_id)) },
     videoUrl: r.video_url,
     caption: r.caption,
     views: Number(r.views_count),

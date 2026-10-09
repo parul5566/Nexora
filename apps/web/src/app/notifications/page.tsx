@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { AppShell, Avatar } from '../../components/shell';
+import { AppShell, Icon, Avatar } from '../../components/shell';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -16,10 +16,7 @@ const LABELS: Record<string, string> = {
   mention: 'mentioned you in a post',
 };
 
-const ICONS: Record<string, string> = {
-  reaction: '👍', comment: '💬', reply: '↩️', follow: '➕',
-  connection_request: '🤝', connection_accept: '✅', mention: '@',
-};
+
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -127,12 +124,12 @@ export default function NotificationsPage() {
               <Avatar name={n.actor.displayName} src={n.actor.avatarUrl ?? undefined} size={48} />
               <span style={{
                 position: 'absolute', bottom: -3, right: -3, fontSize: 13,
-                background: '#fff', borderRadius: '50%', width: 20, height: 20,
+                background: 'var(--fb-surface)', borderRadius: '50%', width: 20, height: 20,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>{ICONS[n.type] ?? '🔔'}</span>
+              }}><Icon name="bell" size={12} color="#E4405F" /></span>
             </Link>
           ) : (
-            <span style={{ fontSize: 20 }}>{ICONS[n.type] ?? '🔔'}</span>
+            <Icon name="bell" size={22} color="#E4405F" />
           )}
           <div style={{ flex: 1 }}>
             {n.actor && <Link href={`/u/${n.actor.username}`} style={{ fontWeight: 600 }}>{n.actor.displayName}</Link>}{' '}

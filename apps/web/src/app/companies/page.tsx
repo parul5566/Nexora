@@ -48,7 +48,7 @@ export default function CompaniesPage() {
       <div style={{ maxWidth: 680, margin: '0 auto', width: '100%' }}>
       <h1 style={{ margin: '0 0 12px', fontSize: 22 }}>Companies</h1>
       <div className="card" style={{ marginBottom: 16, padding: '12px 16px' }}>
-        <input className="input" placeholder="🔍 Search companies…" value={search} onChange={(e) => { setSearch(e.target.value); load(e.target.value); }} style={{ width: '100%', marginBottom: 8, borderRadius: 999 }} />
+        <input className="input" placeholder="Search companies…" value={search} onChange={(e) => { setSearch(e.target.value); load(e.target.value); }} style={{ width: '100%', marginBottom: 8, borderRadius: 999 }} />
         <div style={{ display: 'flex', gap: 8 }}>
           <input className="input" placeholder="New company name" value={name} onChange={(e) => setName(e.target.value)} style={{ flex: 1 }} />
           <button className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '8px 18px' }} onClick={create} disabled={name.trim().length < 2}>Create</button>

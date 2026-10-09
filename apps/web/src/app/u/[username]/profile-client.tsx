@@ -21,10 +21,30 @@ type Profile = {
   followerCount: number;
   followingCount: number;
   isSelf: boolean;
+  postsCount?: number;
   relationship?: { following?: boolean; connectionState?: string | null };
 };
 
-type Tab = 'posts' | 'about' | 'friends';
+type Tab = 'posts' | 'about' | 'friends' | 'followers' | 'following';
+
+/** Backend returns relationshipState as a STRING; normalize for the UI. */
+function normalizeRelationship(rel: unknown): { isFollowing: boolean; conn: string | null } {
+  if (typeof rel === 'string') {
+    return {
+      isFollowing: rel === 'following' || rel === 'mutuals',
+      conn:
+        rel === 'connected'
+          ? 'accepted'
+          : rel === 'pending_outgoing'
+            ? 'pending_outgoing'
+            : rel === 'pending_incoming'
+              ? 'pending_incoming'
+              : null,
+    };
+  }
+  const r = (rel ?? {}) as { following?: boolean; connectionState?: string | null };
+  return { isFollowing: !!r.following, conn: r.connectionState ?? null };
+}
 
 export default function ProfileClient({ username }: { username: string }) {
   const router = useRouter();
@@ -34,6 +54,7 @@ export default function ProfileClient({ username }: { username: string }) {
   const [tab, setTab] = useState<Tab>('posts');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [rel, setRel] = useState<{ isFollowing: boolean; conn: string | null }>({ isFollowing: false, conn: null });
 
   useEffect(() => {
     const token = localStorage.getItem('nexora_token');
@@ -48,6 +69,7 @@ export default function ProfileClient({ username }: { username: string }) {
       if (!res.ok) throw new Error('Profile not found');
       const data = await res.json();
       setProfile(data.profile);
+      setRel(normalizeRelationship(data.profile?.relationship ?? data.relationship));
       const postsRes = await fetch(`${API}/api/v1/users/${encodeURIComponent(username)}/posts`, { headers: auth });
       if (postsRes.ok) {
         const pd = await postsRes.json();
@@ -73,9 +95,8 @@ export default function ProfileClient({ username }: { username: string }) {
     if (!profile) return;
     setBusy(true);
     try {
-      const following = profile.relationship?.following;
       await fetch(`${API}/api/v1/follows/${username}`, {
-        method: following ? 'DELETE' : 'POST',
+        method: rel.isFollowing ? 'DELETE' : 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('nexora_token')}` },
       });
       await load();
@@ -88,13 +109,13 @@ export default function ProfileClient({ username }: { username: string }) {
     if (!profile) return;
     setBusy(true);
     try {
-      const state = profile.relationship?.connectionState;
-      if (state === 'pending' || state === 'accepted') {
+      // pending_incoming can only be resolved from the Friends screen; don't cancel it here.
+      if (rel.conn === 'accepted' || rel.conn === 'pending_outgoing') {
         await fetch(`${API}/api/v1/connections/${username}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${localStorage.getItem('nexora_token')}` },
         });
-      } else {
+      } else if (rel.conn === null) {
         await fetch(`${API}/api/v1/connections/${username}/request`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${localStorage.getItem('nexora_token')}` },
@@ -127,59 +148,74 @@ export default function ProfileClient({ username }: { username: string }) {
     );
   }
 
-  const isFollowing = !!profile.relationship?.following;
-  const conn = profile.relationship?.connectionState;
+  const isFollowing = rel.isFollowing;
+  const conn = rel.conn;
 
   const header = (
-    <div className="card" style={{ overflow: 'hidden', marginBottom: 16 }}>
+    <div className="card" style={{ overflow: 'hidden', marginBottom: 16, padding: 0 }}>
       <div
         style={{
-          height: 140,
+          height: 160,
+          margin: -16,
+          marginBottom: 0,
+          padding: 0,
+          width: 'calc(100% + 32px)',
           background: profile.coverUrl ? `url(${profile.coverUrl}) center/cover` : 'linear-gradient(120deg, #1877F2, #45BD62)',
         }}
       />
-      <div style={{ padding: '0 20px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ marginTop: -40 }}>
-            <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={120} />
+      <div style={{ padding: '0 20px 16px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ marginTop: -52, border: '4px solid var(--fb-canvas)', borderRadius: '50%', background: 'var(--fb-surface)', lineHeight: 0 }}>
+            <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={112} />
           </div>
-          <div style={{ display: 'flex', gap: 8, padding: '10px 0' }}>
-            {profile.isSelf ? (
+          <h1 style={{ margin: '10px 0 0', fontSize: 24 }}>{profile.displayName}</h1>
+          <p className="muted" style={{ margin: '2px 0' }}>@{profile.username}</p>
+          <div style={{ display: 'flex', gap: 16, margin: '4px 0 2px', fontSize: 15, justifyContent: 'center' }}>
+            <span><strong>{profile.followerCount}</strong> <span className="muted">{profile.followerCount === 1 ? 'follower' : 'followers'}</span></span>
+            <span>·</span>
+            <span><strong>{profile.followingCount}</strong> <span className="muted">following</span></span>
+            {typeof profile.postsCount === 'number' && profile.postsCount > 0 && (
               <>
-                <Link href="/settings/profile" className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '8px 20px' }}>Edit profile</Link>
-                <Link href="/settings/profile" className="btn btn-secondary" style={{ minHeight: 0, padding: '8px 16px' }}>⚙ Settings</Link>
-              </>
-            ) : (
-              <>
-                <button className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '8px 20px' }} onClick={toggleFollow} disabled={busy}>
-                  {isFollowing ? '✓ Following' : '+ Follow'}
-                </button>
-                <button className="btn btn-secondary" style={{ minHeight: 0, padding: '8px 16px' }} onClick={connect} disabled={busy}>
-                  {conn === 'accepted' ? '✓ Connected' : conn === 'pending' ? 'Requested' : 'Connect'}
-                </button>
+                <span>·</span>
+                <span><strong>{profile.postsCount}</strong> <span className="muted">posts</span></span>
               </>
             )}
           </div>
         </div>
-        <h1 style={{ margin: '4px 0 0', fontSize: 26 }}>{profile.displayName}</h1>
-        <p className="muted" style={{ margin: '2px 0' }}>@{profile.username}</p>
-        {profile.headline && <p style={{ margin: '6px 0', fontWeight: 500 }}>{profile.headline}</p>}
+        {profile.headline && <p style={{ margin: '8px 0 0', fontWeight: 500 }}>{profile.headline}</p>}
         {profile.bio && <p style={{ margin: '6px 0', whiteSpace: 'pre-wrap' }}>{profile.bio}</p>}
-        <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 15 }}>
-          <span><strong>{profile.followerCount}</strong> <span className="muted">followers</span></span>
-          <span><strong>{profile.followingCount}</strong> <span className="muted">following</span></span>
+        <div style={{ display: 'flex', gap: 8, padding: '12px 0 4px', width: '100%' }}>
+          {profile.isSelf ? (
+            <>
+              <a className="btn" style={{ flex: 1 }} href="/home">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 6 }}><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg>
+              Add to story
+            </a>
+              <Link href="/settings/profile" className="btn btn-secondary" style={{ flex: 1 }}>✏️ Edit profile</Link>
+            </>
+          ) : (
+            <>
+              <button className="btn" style={{ flex: 1 }} onClick={toggleFollow} disabled={busy}>
+                {isFollowing ? '✓ Following' : '+ Follow'}
+              </button>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={connect} disabled={busy || conn === 'pending_incoming'}>
+                {conn === 'accepted' ? '✓ Connected' : conn === 'pending_outgoing' ? 'Requested' : conn === 'pending_incoming' ? 'Respond on Friends' : 'Connect'}
+              </button>
+            </>
+          )}
         </div>
       </div>
-      <div className="chip-row" style={{ borderTop: '1px solid var(--fb-border)', padding: '0 12px', margin: 0 }}>
-        {([['posts', 'Posts'], ['about', 'About'], ['friends', 'Friends']] as const).map(([key, label]) => (
+      <div style={{ borderTop: '1px solid var(--fb-border)', padding: '0 12px', margin: 0, display: 'flex', flexWrap: 'nowrap', overflowX: 'auto' }}>
+        {([['posts', 'Posts'], ['about', 'About'], ['friends', 'Friends'], ['followers', 'Followers'], ['following', 'Following']] as const).map(([key, label]) => (
           <button
             key={key}
             role="tab"
             aria-selected={tab === key}
             className="chip"
             style={{
+              flexShrink: 0,
               borderRadius: 0, background: 'transparent', border: 'none', borderBottom: tab === key ? '3px solid var(--fb-blue)' : '3px solid transparent',
-              color: tab === key ? 'var(--fb-blue)' : 'var(--fb-text-secondary)',
+              color: tab === key ? 'var(--fb-blue-link, #4599FF)' : 'var(--fb-text-secondary)',
             }}
             onClick={() => setTab(key)}
           >{label}</button>
@@ -227,8 +263,59 @@ export default function ProfileClient({ username }: { username: string }) {
           </div>
         </div>
       )}
+      {(tab === 'followers' || tab === 'following') && (
+        <FollowList username={username} kind={tab} onChanged={load} />
+      )}
     </div>
   );
 
   return <AppShell active="menu">{body}</AppShell>;
+}
+
+function FollowList({ username, kind, onChanged }: { username: string; kind: 'followers' | 'following'; onChanged: () => void }) {
+  const [items, setItems] = useState<Array<{ username: string; displayName: string; avatarUrl: string | null; isFollowing?: boolean }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('nexora_token');
+    if (!token) return;
+    setLoading(true);
+    fetch(`${API}/api/v1/follows/${encodeURIComponent(username)}/${kind}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((d) => setItems(d.items ?? []))
+      .finally(() => setLoading(false));
+  }, [username, kind]);
+
+  async function toggle(u: string, following: boolean) {
+    const token = localStorage.getItem('nexora_token');
+    if (!token) return;
+    await fetch(`${API}/api/v1/follows/${u}`, {
+      method: following ? 'DELETE' : 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setItems((prev) => prev.map((x) => (x.username === u ? { ...x, isFollowing: !following } : x)));
+    onChanged();
+  }
+
+  if (loading) return <p className="muted">Loading…</p>;
+  if (items.length === 0)
+    return <div className="card" style={{ textAlign: 'center', padding: 40 }}><p className="muted">{kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}</p></div>;
+  return (
+    <div>
+      {items.map((p) => (
+        <div key={p.username} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, padding: '12px 16px' }}>
+          <Link href={`/u/${p.username}`}><Avatar name={p.displayName} src={p.avatarUrl ?? undefined} size={52} /></Link>
+          <div style={{ flex: 1 }}>
+            <Link href={`/u/${p.username}`} style={{ fontWeight: 600, color: 'var(--fb-text)' }}>{p.displayName}</Link>
+            <div className="muted" style={{ fontSize: 13 }}>@{p.username}</div>
+          </div>
+          <button
+            className={p.isFollowing ? 'btn btn-secondary' : 'btn btn-primary btn-pill'}
+            style={{ minHeight: 0, padding: '6px 16px' }}
+            onClick={() => toggle(p.username, !!p.isFollowing)}
+          >{p.isFollowing ? '✓ Following' : '+ Follow'}</button>
+        </div>
+      ))}
+    </div>
+  );
 }

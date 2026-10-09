@@ -29,7 +29,8 @@ export default function CreatorDashboard() {
 
   const load = useCallback(async (r: string) => {
     setError(null);
-    const res = await fetch(`/api/v1/analytics/creator?range=${r}`, { credentials: 'include' });
+    const token = localStorage.getItem('nexora_token');
+    const res = await fetch(`/api/v1/analytics/creator?range=${r}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
     if (!res.ok) {
       setError(res.status === 401 ? 'Please log in to view your dashboard.' : `Failed to load dashboard (${res.status})`);
       return;

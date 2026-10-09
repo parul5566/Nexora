@@ -40,10 +40,16 @@ export async function getOrCreateConversation(userId: bigint, otherUsername: str
 }
 
 async function assertParticipant(userId: bigint, conversationId: number): Promise<void> {
+  const ok = await isParticipant(conversationId, userId);
+  if (!ok) throw forbidden('Not a participant of this conversation');
+}
+
+/** Boolean participant check (used by wsHub subscribe validation). */
+export async function isParticipant(conversationId: number | bigint, userId: bigint): Promise<boolean> {
   const [p]: any = await pool.query(
     'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
     [conversationId, userId]);
-  if (!p[0]) throw forbidden('Not a participant of this conversation');
+  return !!p[0];
 }
 
 export async function sendMessage(userId: bigint, conversationId: number, content: string): Promise<MessageView> {

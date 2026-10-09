@@ -163,7 +163,7 @@ export default function MessagesPage() {
                 borderRadius: 18,
                 borderBottomRightRadius: mine ? 4 : 18,
                 borderBottomLeftRadius: mine ? 18 : 4,
-                background: mine ? 'var(--fb-blue)' : '#E4E6EB',
+                background: mine ? 'var(--fb-blue)' : 'var(--fb-surface-2)',
                 color: mine ? '#fff' : 'var(--fb-text)',
                 fontSize: 15,
               }}>
@@ -209,10 +209,7 @@ export default function MessagesPage() {
           .messages-split.thread-open .msg-thread { display: block; }
         }
       `}</style>
-      <script dangerouslySetInnerHTML={{ __html: '' }} />
-      {typeof document !== 'undefined' && (
-        <style>{`@media (max-width: 768px) { .messages-split { ${active && !showList ? '' : ''} } }`}</style>
-      )}
+      <style>{`@media (max-width: 768px) { .messages-split.thread-open { height: calc(100vh - 120px); } }`}</style>
       <MobileSplit active={!!active && !showList} />
     </AppShell>
   );
