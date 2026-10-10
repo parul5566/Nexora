@@ -16,3 +16,5 @@ uploads
 media
 userDocs
 .nquarantine
+.drytis/
+*.tsbuildinfo

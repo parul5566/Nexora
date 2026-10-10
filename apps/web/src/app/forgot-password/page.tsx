@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
   return (
     <main className="auth-page">
       <div className="card auth-card" style={{ textAlign: 'center' }}>
-        <h1 className="logo">Nexora</h1>
+        <h1 className="logo">Bhasebook</h1>
         <h2 style={{ fontSize: 20, margin: '4px 0 20px' }}>Forgot Password?</h2>
         {stage === 'request' ? (
           <form onSubmit={onRequest} style={{ textAlign: 'left' }}>

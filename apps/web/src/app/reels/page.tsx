@@ -82,8 +82,11 @@ export default function ReelsPage() {
       method: 'POST', headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
-      const { reel } = await res.json();
-      setReels((rs) => rs.map((r) => (r.id === id ? { ...r, liked: reel.liked, likes: reel.likes } : r)));
+      const data = await res.json().catch(() => null);
+      const reel = data?.reel ?? data;
+      if (reel && typeof reel.likes === 'number') {
+        setReels((rs) => rs.map((r) => (r.id === id ? { ...r, liked: !!reel.liked, likes: reel.likes } : r)));
+      }
     }
   }
 

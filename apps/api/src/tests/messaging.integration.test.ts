@@ -69,6 +69,8 @@ describe('messaging (Module 11)', () => {
     const conv = await authed(request(app).post('/api/v1/conversations'), a.token)
       .send({ username: b.username });
     expect(conv.status).toBe(201);
+    // no follow relationship yet -> lands as a pending message request
+    expect(conv.body.status).toBe('pending');
     const convId = conv.body.id;
 
     // idempotent get-or-create
@@ -80,6 +82,21 @@ describe('messaging (Module 11)', () => {
       .send({ content: 'hello B' });
     expect(sent.status).toBe(201);
     expect(sent.body.message.content).toBe('hello B');
+
+    // while pending, the request must NOT appear in B's main inbox
+    const preInbox = await authed(request(app).get('/api/v1/conversations'), b.token);
+    expect(preInbox.body.conversations.find((x: any) => x.id === convId)).toBeUndefined();
+    // ...but it IS in B's message requests
+    const reqs = await authed(request(app).get('/api/v1/conversations/requests'), b.token);
+    expect(reqs.status).toBe(200);
+    expect(reqs.body.requests.find((x: any) => x.id === convId)?.from.username).toBe(a.username);
+    const reqCount = await authed(request(app).get('/api/v1/conversations/requests/count'), b.token);
+    expect(reqCount.body.count).toBeGreaterThanOrEqual(1);
+
+    // B accepts -> thread moves to main inbox
+    const acc = await authed(request(app).post(`/api/v1/conversations/${convId}/accept`), b.token);
+    expect(acc.status).toBe(200);
+    expect(acc.body.status).toBe('accepted');
 
     // participant reads
     const inbox = await authed(request(app).get(`/api/v1/conversations/${convId}/messages`), b.token);
@@ -104,6 +121,16 @@ describe('messaging (Module 11)', () => {
     const empty = await authed(request(app).post(`/api/v1/conversations/${convId}/messages`), a.token)
       .send({ content: '   ' });
     expect(empty.status).toBe(400);
+
+    // decline flow: A starts a new thread with c, c declines -> thread removed
+    const conv2 = await authed(request(app).post('/api/v1/conversations'), a.token)
+      .send({ username: c.username });
+    expect(conv2.body.status).toBe('pending');
+    const dec = await authed(request(app).post(`/api/v1/conversations/${conv2.body.id}/decline`), c.token);
+    expect(dec.status).toBe(200);
+    expect(dec.body.status).toBe('declined');
+    const afterDec = await authed(request(app).get('/api/v1/conversations/requests'), c.token);
+    expect(afterDec.body.requests.find((x: any) => x.id === conv2.body.id)).toBeUndefined();
   });
 
   it('WS: online recipient receives message in real time; bad token rejected', async () => {

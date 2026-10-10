@@ -24,13 +24,13 @@ export default function SplashPage() {
   }, [router]);
 
   if (!checked) {
-    return <main className="splash"><div className="splash-mark">N</div></main>;
+    return <main className="splash"><div className="splash-mark">B</div></main>;
   }
 
   return (
     <main className="splash">
-      <div className="splash-mark">N</div>
-      <h1 style={{ fontSize: 34, letterSpacing: -1 }}>Nexora</h1>
+      <div className="splash-mark">B</div>
+      <h1 style={{ fontSize: 34, letterSpacing: -1 }}>Bhasebook</h1>
       <p style={{ fontSize: 17, maxWidth: 320, opacity: 0.95 }}>
         Connect with people around the world
       </p>

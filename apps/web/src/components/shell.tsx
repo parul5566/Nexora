@@ -110,10 +110,10 @@ function TopBar({ active }: { active: string }) {
   const { unread, messages } = useUnread();
   return (
     <header className="topbar">
-      <Link href="/home" className="logo" style={{ fontSize: 28, textDecoration: 'none', flexShrink: 0 }}>Nexora</Link>
+      <Link href="/home" className="logo" style={{ fontSize: 28, textDecoration: 'none', flexShrink: 0 }}>Bhasebook</Link>
       <form action="/search" className="topbar-form" style={{ flex: 1, maxWidth: 240, position: 'relative' }}>
         <span style={{ position: 'absolute', left: 12, top: 8 }}><Icon name="search" size={16} /></span>
-        <input className="topbar-search" name="q" placeholder="Search Nexora" aria-label="Search" />
+        <input className="topbar-search" name="q" placeholder="Search Bhasebook" aria-label="Search" />
       </form>
       <span style={{ flex: 1 }} />
       <nav className="topbar-nav row" style={{ gap: 4 }}>

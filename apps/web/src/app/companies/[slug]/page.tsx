@@ -18,9 +18,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const data = await getEntity(params.slug);
   const entity = data?.company ?? null;
   if (!entity || null) {
-    return { title: 'Nexora', robots: { index: false, follow: false } };
+    return { title: 'Bhasebook', robots: { index: false, follow: false } };
   }
-  const title = `${entity.name ?? entity.title} | Nexora`;
+  const title = `${entity.name ?? entity.title} | Bhasebook`;
   const description = String(entity.description ?? '').slice(0, 200);
   return {
     title,

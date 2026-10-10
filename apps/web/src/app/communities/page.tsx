@@ -25,13 +25,15 @@ export default function CommunitiesPage() {
   const [name, setName] = useState('');
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'discover' | 'joined'>('discover');
 
   const load = useCallback(async (q = '') => {
     try {
       const data = await api(`/communities${q ? `?q=${encodeURIComponent(q)}` : ''}`);
       setCommunities(data.communities);
-    } catch (e: any) { setError(e.message); }
+      setLoading(false);
+    } catch (e: any) { setError(e.message); setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -73,6 +75,7 @@ export default function CommunitiesPage() {
           </select>
           <button className="btn btn-primary btn-pill" style={{ minHeight: 0, padding: '8px 18px' }} onClick={create} disabled={name.trim().length < 2}>Create</button>
         </div>
+        {loading && !error && <p className="connecting-note" aria-live="polite">Network connecting…</p>}
         {error && <p className="error-text">{error}</p>}
       </div>
       {shown.length === 0 && (

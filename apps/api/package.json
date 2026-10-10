@@ -8,7 +8,7 @@
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "RUN_MAIN=false vitest run",
     "migrate": "tsx src/db/migrate.ts"
   },
   "dependencies": {

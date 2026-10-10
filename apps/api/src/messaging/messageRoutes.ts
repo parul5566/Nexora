@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
-import { getOrCreateConversation, sendMessage, listMessages, listConversations } from './messageService.js';
+import { sendMessage, listMessages, listConversations, getOrCreateConversationGated, acceptConversation, declineConversation, listRequests, requestsCount, requestInfo } from './messageService.js';
 import { deliverMessage } from './wsHub.js';
 import { badRequest } from '@nexora/shared';
 
@@ -16,7 +16,7 @@ router.post('/conversations', requireAuth, async (req: any, res, next) => {
   try {
     const { username } = req.body ?? {};
     if (!username) throw badRequest('username is required');
-    res.status(201).json(await getOrCreateConversation(req.ctx.userId, String(username)));
+    res.status(201).json(await getOrCreateConversationGated(req.ctx.userId, String(username)));
   } catch (e) { next(e); }
 });
 
@@ -39,3 +39,25 @@ router.post('/conversations/:id/messages', requireAuth, async (req: any, res, ne
 });
 
 export default router;
+
+// ---- Instagram-style request system ----
+
+router.get('/conversations/requests/count', requireAuth, async (req: any, res, next) => {
+  try { res.json({ count: await requestsCount(req.ctx.userId) }); } catch (e) { next(e); }
+});
+
+router.get('/conversations/requests', requireAuth, async (req: any, res, next) => {
+  try { res.json({ requests: await listRequests(req.ctx.userId) }); } catch (e) { next(e); }
+});
+
+router.get('/conversations/:id/request', requireAuth, async (req: any, res, next) => {
+  try { res.json(await requestInfo(req.ctx.userId, Number(req.params.id))); } catch (e) { next(e); }
+});
+
+router.post('/conversations/:id/accept', requireAuth, async (req: any, res, next) => {
+  try { res.json(await acceptConversation(req.ctx.userId, Number(req.params.id))); } catch (e) { next(e); }
+});
+
+router.post('/conversations/:id/decline', requireAuth, async (req: any, res, next) => {
+  try { res.json(await declineConversation(req.ctx.userId, Number(req.params.id))); } catch (e) { next(e); }
+});

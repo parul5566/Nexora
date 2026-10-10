@@ -31,10 +31,10 @@ async function getProfile(username: string): Promise<Profile | null> {
 export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
   const profile = await getProfile(params.username);
   if (!profile || profile.limited) {
-    return { title: 'Profile | Nexora', robots: { index: false, follow: false } };
+    return { title: 'Profile | Bhasebook', robots: { index: false, follow: false } };
   }
-  const title = `${profile.displayName} (@${profile.username}) | Nexora`;
-  const description = profile.headline || profile.bio || `${profile.displayName} on Nexora`;
+  const title = `${profile.displayName} (@${profile.username}) | Bhasebook`;
+  const description = profile.headline || profile.bio || `${profile.displayName} on Bhasebook`;
   const url = `${SITE}/u/${profile.username}`;
   return {
     title,

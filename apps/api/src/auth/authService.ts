@@ -102,7 +102,7 @@ export async function register(raw: unknown): Promise<{ user: SafeUser; verifyTo
   if (!parsed.success) throw badRequest(parsed.error.issues[0]?.message ?? 'Invalid registration data');
   const user = await insertUser(parsed.data);
   const verifyToken = await createVerificationToken(user.id, 'email_verify');
-  await mailer.send(user.email, 'Verify your Nexora account', `Your verification token: ${verifyToken}`);
+  await mailer.send(user.email, 'Verify your Bhasebook account', `Your verification token: ${verifyToken}`);
   recordDevToken(user.email, 'email_verify', verifyToken);
   // The token travels in the response only while no real mail provider is
   // configured (dev transport). Once REAL_MAIL=1, clients must use email.
@@ -169,7 +169,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   const [rows]: any = await pool.query('SELECT id, email FROM users WHERE email = ?', [email]);
   if (!rows.length) return; // do not reveal account existence
   const token = await createVerificationToken(rows[0].id, 'password_reset');
-  await mailer.send(rows[0].email, 'Reset your Nexora password', `Your password reset token: ${token}`);
+  await mailer.send(rows[0].email, 'Reset your Bhasebook password', `Your password reset token: ${token}`);
   recordDevToken(rows[0].email, 'password_reset', token);
 }
 

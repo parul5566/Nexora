@@ -198,9 +198,20 @@ export default function ProfileClient({ username }: { username: string }) {
               <button className="btn" style={{ flex: 1 }} onClick={toggleFollow} disabled={busy}>
                 {isFollowing ? '✓ Following' : '+ Follow'}
               </button>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={connect} disabled={busy || conn === 'pending_incoming'}>
-                {conn === 'accepted' ? '✓ Connected' : conn === 'pending_outgoing' ? 'Requested' : conn === 'pending_incoming' ? 'Respond on Friends' : 'Connect'}
-              </button>
+              {isFollowing ? (
+                <a
+                  className="btn"
+                  style={{ flex: 1 }}
+                  href={`/messages?c=${encodeURIComponent(username)}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6 }}><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.3 8.6 8.6 0 0 1-3.9-.9L3 20l1.2-5.4a8.2 8.2 0 0 1-.7-3.1A8.4 8.4 0 0 1 12 3.2a8.4 8.4 0 0 1 9 8.3z" /></svg>
+                  Message
+                </a>
+              ) : (
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={connect} disabled={busy || conn === 'pending_incoming'}>
+                  {conn === 'accepted' ? '✓ Connected' : conn === 'pending_outgoing' ? 'Requested' : conn === 'pending_incoming' ? 'Respond on Friends' : 'Connect'}
+                </button>
+              )}
             </>
           )}
         </div>
